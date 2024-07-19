@@ -26,7 +26,10 @@ func main() {
 			check, err := CheckItem(items[i])
 			if err != nil {
 				fmt.Print(err)
-				log.Fatalf("Die Artikelnummer %s ist nicht in der Datenbank, bitte Datenbank aktualisieren oder Nummer prüfen!", items[i])
+				log.Fatalf(
+					"Die Artikelnummer %s ist nicht in der Datenbank, bitte Datenbank aktualisieren oder Nummer prüfen!",
+					items[i],
+				)
 			}
 			if !check {
 				log.Fatal(err)
@@ -40,22 +43,42 @@ func main() {
 
 		// Generate Batch File
 		Artikelnummern := strings.Join(items, ",")
-		file, err := os.Create("Aussteller.ps1")
+
+		installer, err := os.Create("install.bat")
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer file.Close()
-		url := fmt.Sprintf("& 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' --kiosk aussteller.computer-extra.de/%s --edge-kios-type=fullscreen", Artikelnummern)
-		_, err = file.WriteString(url + "\n")
+		defer installer.Close()
+		bat := fmt.Sprintf(
+			"echo Powershell.exe -ExecutionPolicy Bypass -Command \"& 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' --kiosk aussteller.computer-extra.de/%s --edge-kios-type=fullscreen\" > \"%%USERPROFILE%%\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\Aussteller.bat \"",
+			Artikelnummern,
+		)
+		_, err = installer.WriteString(bat)
 		if err != nil {
 			log.Fatal(err)
 		}
-		file2, err := os.Create("Aussteller.bat")
-		defer file2.Close()
-		_, err = file2.WriteString("PowerShell.exe -ExecutionPolicy Bypass -Command \"& '%~dpn0.ps1'\"" + "\n")
-		if err != nil {
-			log.Fatal(err)
-		}
+
+		// file, err := os.Create("Aussteller.ps1")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// defer file.Close()
+		// url := fmt.Sprintf(
+		// 	"& 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' --kiosk aussteller.computer-extra.de/%s --edge-kios-type=fullscreen",
+		// 	Artikelnummern,
+		// )
+		// _, err = file.WriteString(url + "\n")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// file2, err := os.Create("Aussteller.bat")
+		// defer file2.Close()
+		// _, err = file2.WriteString(
+		// 	"PowerShell.exe -ExecutionPolicy Bypass -Command \"& '%~dpn0.ps1'\"" + "\n",
+		// )
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
 
 	} else {
 		fmt.Println("Die Artikelnummern scheinen nicht zu stimmen. bitte neu starten!")
@@ -66,7 +89,9 @@ func main() {
 func Items() ([]string, string) {
 	var items string
 
-	fmt.Println("Bitte die Artikelnummern, mit Komma (,) getrennt eingeben und mit Enter bestätigen:")
+	fmt.Println(
+		"Bitte die Artikelnummern, mit Komma (,) getrennt eingeben und mit Enter bestätigen:",
+	)
 	fmt.Scan(&items)
 
 	fmt.Println("Folgende Artikelnummern wurden eingegeben, passt das? y | n")
@@ -87,7 +112,14 @@ func CheckItem(Artikelnummer string) (bool, error) {
 		return false, fmt.Errorf("SAGE_PORT not in .env: %s", err)
 	}
 
-	connstring := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", os.Getenv("MYSQL_USER"), os.Getenv("MYSQL_PASS"), os.Getenv("MYSQL_SERVER"), port, os.Getenv("MYSQL_DB"))
+	connstring := fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s",
+		os.Getenv("MYSQL_USER"),
+		os.Getenv("MYSQL_PASS"),
+		os.Getenv("MYSQL_SERVER"),
+		port,
+		os.Getenv("MYSQL_DB"),
+	)
 	conn, err := sql.Open("mysql", connstring)
 	if err != nil {
 		return false, fmt.Errorf("cannot connect to Database: %s", err)
